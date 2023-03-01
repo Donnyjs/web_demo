@@ -10,7 +10,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isConnected) {
-      navigate('/home');
+      navigate('/asset');
     }
   }, [isConnected]);
 

@@ -44,4 +44,9 @@ export const router = [
       },
     ],
   },
+  {
+    icon: 'HomeOutlined',
+    title: 'Mint',
+    path: '/mint',
+  },
 ];
