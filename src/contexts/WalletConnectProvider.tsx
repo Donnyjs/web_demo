@@ -12,8 +12,27 @@ interface WagmiConfigProviderProps {
 
 const projectId = WEB3MODAL_PROJECT_ID;
 
+const avalanche = {
+  id: 43_114,
+  name: 'Avalanche',
+  network: 'avalanche',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Avalanche',
+    symbol: 'AVAX',
+  },
+  rpcUrls: {
+    public: { http: ['https://api.avax.network/ext/bc/C/rpc'] },
+    default: { http: ['https://api.avax.network/ext/bc/C/rpc'] },
+  },
+  blockExplorers: {
+    etherscan: { name: 'SnowTrace', url: 'https://snowtrace.io' },
+    default: { name: 'SnowTrace', url: 'https://snowtrace.io' },
+  },
+};
+
 const { provider, chains } = configureChains(
-  [bsc, bscTestnet],
+  [avalanche, bsc, bscTestnet],
   [publicProvider()],
 );
 
