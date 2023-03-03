@@ -1,11 +1,67 @@
 import React from 'react';
 import { List, Select } from 'antd';
-import { useAccount, configureChains, chain } from 'wagmi';
 import { Card, Button, Space } from 'antd';
 import { useState } from 'react';
-import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import {
+  useContractRead,
+  useContractWrite,
+  usePrepareContractWrite,
+} from 'wagmi';
+import GAME_ABI from '@/service/gameComposableNFT.json';
 
 const Mint: React.FC = () => {
+  const [tokenId] = useState(1);
+
+  const getTokenURI = (tokenId: number) => {
+    return useContractRead({
+      address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+      abi: GAME_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    });
+  };
+
+  console.log(getTokenURI(1).data);
+  const getSlotsInfo = (tokenId: number) => {
+    return useContractRead({
+      address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+      abi: GAME_ABI,
+      functionName: 'getTokenSlotsInfo',
+      args: [tokenId],
+    });
+  };
+  console.log(getSlotsInfo(tokenId).data);
+
+  //console.log(data);
+
+  const mint = useContractWrite({
+    mode: 'recklesslyUnprepared',
+    address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+    abi: GAME_ABI,
+    functionName: 'mint',
+    args: [
+      'https://gateway.pinata.cloud/ipfs/QmVeugxfKTUoy7tsKck4QkQA55pW4y8jP8DJtFHorRgA8y',
+      //baseNFTTokenID
+      0,
+      //mintRoyaltyFee Unit:wei
+      1,
+      //marketRoyaltyFraction Unit:<10000
+      1,
+      //newUsageFee Unit:wei
+      1,
+    ],
+  });
+  console.log(mint.data);
+
+  const attachBatch = useContractWrite({
+    mode: 'recklesslyUnprepared',
+    address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+    abi: GAME_ABI,
+    functionName: 'attachBatch',
+    // slotIds,slotAssetTokenIds,amount
+    args: [tokenId, [], [], []],
+  });
+
   const onChange = (value: string) => {
     console.log(`selected ${value}`);
   };
@@ -13,8 +69,6 @@ const Mint: React.FC = () => {
   const onSearch = (value: string) => {
     console.log('search:', value);
   };
-
-  const { address } = useAccount();
 
   const ModuleList = [
     { nftId: 0, tokenURI: 'www.baidu.com', charges: true },
@@ -135,7 +189,7 @@ const Mint: React.FC = () => {
           <Button
             type="primary"
             loading={loadings[0]}
-            onClick={() => enterLoading(0)}
+            onClick={() => mint.write()}
           >
             Mint
           </Button>

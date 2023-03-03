@@ -12,27 +12,31 @@ interface WagmiConfigProviderProps {
 
 const projectId = WEB3MODAL_PROJECT_ID;
 
-const avalanche = {
-  id: 43_114,
-  name: 'Avalanche',
-  network: 'avalanche',
+const Sepolia = {
+  id: 11155111,
+  name: 'Sepolia',
+  network: 'sepolia',
   nativeCurrency: {
     decimals: 18,
-    name: 'Avalanche',
-    symbol: 'AVAX',
+    name: 'ETH',
+    symbol: 'ETH',
   },
   rpcUrls: {
-    public: { http: ['https://api.avax.network/ext/bc/C/rpc'] },
-    default: { http: ['https://api.avax.network/ext/bc/C/rpc'] },
+    public: {
+      http: ['https://ethereum-sepolia.blockpi.network/v1/rpc/public'],
+    },
+    default: {
+      http: ['https://ethereum-sepolia.blockpi.network/v1/rpc/public	'],
+    },
   },
   blockExplorers: {
-    etherscan: { name: 'SnowTrace', url: 'https://snowtrace.io' },
-    default: { name: 'SnowTrace', url: 'https://snowtrace.io' },
+    etherscan: { name: 'sepolia', url: 'https://sepolia.etherscan.io/' },
+    default: { name: 'sepolia', url: 'https://sepolia.etherscan.io/' },
   },
 };
 
 const { provider, chains } = configureChains(
-  [avalanche, bsc, bscTestnet],
+  [Sepolia, bsc, bscTestnet],
   [publicProvider()],
 );
 
