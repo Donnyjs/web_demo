@@ -2,12 +2,9 @@ import React from 'react';
 import { List, Select } from 'antd';
 import { Card, Button, Space } from 'antd';
 import { useState } from 'react';
-import {
-  useContractRead,
-  useContractWrite,
-  usePrepareContractWrite,
-} from 'wagmi';
+import { useContractRead, useContractWrite } from 'wagmi';
 import GAME_ABI from '@/service/gameComposableNFT.json';
+import { ethers } from 'ethers';
 
 const Mint: React.FC = () => {
   const [tokenId] = useState(1);
@@ -22,7 +19,7 @@ const Mint: React.FC = () => {
     });
   };
 
-  console.log(getTokenURI(1).data);
+  console.log('tokenURI: ' + getTokenURI(1).data);
   const getSlotsInfo = (tokenId: number) => {
     return useContractRead({
       address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
@@ -31,7 +28,7 @@ const Mint: React.FC = () => {
       args: [tokenId],
     });
   };
-  console.log(getSlotsInfo(tokenId).data);
+  console.log('SlotsInfo: ' + getSlotsInfo(tokenId).data);
 
   const getTokenIdsFromAddress = (address: string) => {
     return useContractRead({
@@ -41,7 +38,9 @@ const Mint: React.FC = () => {
       args: [address],
     });
   };
-  console.log(getTokenIdsFromAddress(address).data);
+  console.log(
+    'getTokenIdsFromAddress: ' + getTokenIdsFromAddress(address).data,
+  );
 
   const mint = useContractWrite({
     mode: 'recklesslyUnprepared',
@@ -59,6 +58,10 @@ const Mint: React.FC = () => {
       //newUsageFee Unit:wei
       1,
     ],
+    overrides: {
+      // payable
+      value: ethers.utils.parseEther('0'),
+    },
   });
   console.log(mint.data);
 
@@ -70,6 +73,16 @@ const Mint: React.FC = () => {
     // slotIds,slotAssetTokenIds,amount
     args: [tokenId, [1], [2], [1]],
   });
+
+  const getTokenMintRoyaltyInfo = (tokenId: number) => {
+    return useContractRead({
+      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
+      abi: GAME_ABI,
+      functionName: 'tokenMintRoyaltyInfo',
+      args: [tokenId],
+    });
+  };
+  console.log(getTokenMintRoyaltyInfo(tokenId).data);
 
   const onChange = (value: string) => {
     console.log(`selected ${value}`);
