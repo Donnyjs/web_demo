@@ -11,10 +11,11 @@ import GAME_ABI from '@/service/gameComposableNFT.json';
 
 const Mint: React.FC = () => {
   const [tokenId] = useState(1);
+  const [address] = useState('0x0607125636AAeBf08F1b8f94ce284c62302D890B');
 
   const getTokenURI = (tokenId: number) => {
     return useContractRead({
-      address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
       abi: GAME_ABI,
       functionName: 'tokenURI',
       args: [tokenId],
@@ -24,7 +25,7 @@ const Mint: React.FC = () => {
   console.log(getTokenURI(1).data);
   const getSlotsInfo = (tokenId: number) => {
     return useContractRead({
-      address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
       abi: GAME_ABI,
       functionName: 'getTokenSlotsInfo',
       args: [tokenId],
@@ -32,15 +33,23 @@ const Mint: React.FC = () => {
   };
   console.log(getSlotsInfo(tokenId).data);
 
-  //console.log(data);
+  const getTokenIdsFromAddress = (address: string) => {
+    return useContractRead({
+      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
+      abi: GAME_ABI,
+      functionName: 'balanceOfTokens',
+      args: [address],
+    });
+  };
+  console.log(getTokenIdsFromAddress(address).data);
 
   const mint = useContractWrite({
     mode: 'recklesslyUnprepared',
-    address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+    address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
     abi: GAME_ABI,
     functionName: 'mint',
     args: [
-      'https://gateway.pinata.cloud/ipfs/QmVeugxfKTUoy7tsKck4QkQA55pW4y8jP8DJtFHorRgA8y',
+      'https://demo.eclair.spike.network/Demo.json',
       //baseNFTTokenID
       0,
       //mintRoyaltyFee Unit:wei
@@ -55,11 +64,11 @@ const Mint: React.FC = () => {
 
   const attachBatch = useContractWrite({
     mode: 'recklesslyUnprepared',
-    address: '0x842b364bfe72440BA08E1A73FcAcfEc87FabC9f3',
+    address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
     abi: GAME_ABI,
     functionName: 'attachBatch',
     // slotIds,slotAssetTokenIds,amount
-    args: [tokenId, [], [], []],
+    args: [tokenId, [1], [2], [1]],
   });
 
   const onChange = (value: string) => {
