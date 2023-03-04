@@ -1,47 +1,207 @@
-import React from 'react';
-import { List, Select } from 'antd';
-import { Card, Button, Space } from 'antd';
-import { useState } from 'react';
-import { useContractRead, useContractWrite, useSigner } from 'wagmi';
-import GAME_ABI from '@/service/gameComposableNFT.json';
+import { List, Select, notification } from 'antd';
+import { Card, Button, Col, Drawer, Form, Input, Row, Space } from 'antd';
+import { useEffect, useState, useRef } from 'react';
+import axios, { AxiosRequestConfig } from 'axios';
 import { ethers } from 'ethers';
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { PINATA_JWT } from '@/constants';
+import { useSigner } from 'wagmi';
 import {
   getTokenURIs,
-  getTokenIdsFromAddress,
-  mint,
   getSlotsInfo,
+  tokenMintRoyaltyInfo,
+  mint,
+  attachBatch,
 } from '@/service/contract';
 
-function Test() {
-  const info = useContractRead({
-    address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-    abi: GAME_ABI,
-    functionName: 'getTokenSlotsInfo',
-    args: [1],
-  });
-  console.log(info);
+interface GameNftMetadata {
+  name: string;
+  description: string;
+  image: string;
+  external_url: string;
+  spike_info: SpikeInfo;
+  attributes: attribute[];
 }
 
-const Mint: React.FC = () => {
-  const [tokenId] = useState(1);
-  const [address] = useState('0x0607125636AAeBf08F1b8f94ce284c62302D890B');
-  const { data: signer } = useSigner();
-  // const pinJson = (data: string) => {
-  //   const config: AxiosRequestConfig = {
-  //     method: 'post',
-  //     url: 'https://api.pinata.cloud/pinning/pinJSONToIPFS',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       Authorization: PINATA_JWT,
-  //     },
-  //     data: data,
-  //   };
+interface attribute {
+  //trait_type: string;
+  // name: string;
+  //type: string;
+  description: string;
+  uri: string;
+  size: number;
+}
 
-  //   const res = axios(config);
-  //   return res;
-  // };
+interface SpikeInfo {
+  version: string;
+  type: string;
+  url: string;
+}
+
+interface GameTemplate {
+  label: string;
+  value: string;
+}
+
+interface ModuleData {
+  name: string;
+  slotId: number;
+  tokenId: number;
+  tokenUri: string;
+  description: string;
+  attribute: attribute;
+}
+
+interface ModuleTemplate {
+  label: string;
+  value: string;
+}
+
+const Mint = () => {
+  useEffect(() => {
+    initGameNftSelectData();
+  }, []);
+
+  const { data: signer } = useSigner();
+
+  const [gameTemplate, setGameTemplate] = useState<GameTemplate[]>([]);
+  const [selectedGameTemplate, setSelectedGameTemplate] = useState<number>(-1);
+  const [selectedModuleTemplate, setSelectedModuleTemplate] =
+    useState<number>(-1);
+  const [mintingModuleData, setMintingModuleData] = useState<ModuleData[]>([]);
+
+  const [moduleTemplate, setModuleTemplate] = useState<ModuleTemplate[]>([]);
+  const [gameTokenId, setGameTokenId] = useState<string>('-1');
+  //模块模版  tokenId 和 slotId的对应关系
+  const tokenIdToSlotId = new Map([
+    [5, 3],
+    [32, 10],
+  ]);
+
+  const [open, setOpen] = useState(false);
+  const nameRef = useRef<string>();
+  const descriptionRef = useRef();
+  const mintRoyaltyFeeRef = useRef();
+  const marketRoyaltyFractionRef = useRef();
+  const newUsageFeeRef = useRef();
+
+  async function initGameNftSelectData() {
+    //写死的游戏模版库tokenId列表
+    const gameNftSelectData: GameTemplate[] = [];
+    const gameTempalteTokenId: number[] = [1];
+    for (let i = 0; i < gameTempalteTokenId.length; i++) {
+      const tokenUri = await getTokenURIs(
+        signer as ethers.Signer,
+        gameTempalteTokenId[i],
+      );
+      console.log('tokenUri: ', tokenUri);
+      await fetch(tokenUri)
+        .then((res) => {
+          return res.json();
+        })
+        .then((body) => {
+          console.log('game : ');
+          gameNftSelectData.push({
+            value: gameTempalteTokenId[i] + '',
+            label: body.name,
+          });
+        })
+        .catch(() => {
+          console.log('err');
+        });
+    }
+    setGameTemplate(gameNftSelectData);
+
+    //写死的模块模版库tokenId列表
+    const moduleNftSelectData: ModuleTemplate[] = [];
+    const moduleTempalteTokenId: number[] = [32];
+    for (let i = 0; i < moduleTempalteTokenId.length; i++) {
+      const tokenUri = await getTokenURIs(
+        signer as ethers.Signer,
+        moduleTempalteTokenId[i],
+      );
+      await fetch(tokenUri)
+        .then((res) => {
+          return res.json();
+        })
+        .then((body) => {
+          console.log('game : ');
+          moduleNftSelectData.push({
+            value: moduleTempalteTokenId[i] + '',
+            label: body.name,
+          });
+        })
+        .catch(() => {
+          console.log('err');
+        });
+    }
+    setModuleTemplate(moduleNftSelectData);
+  }
+
+  const onGameTemplateChange = async (value: string) => {
+    console.log(`selected game token id: ${value}`);
+    //查询游戏内的模块tokenId列表
+    const slotIds = await getSlotsInfo(
+      signer as ethers.Signer,
+      parseInt(value),
+    );
+    console.log('slotIds : ', slotIds);
+    const moduleDataList: ModuleData[] = [];
+    for (let i = 0; i < slotIds.length; i++) {
+      // check isFilled
+      if (slotIds[i][3] == false) {
+        console.log('not fillled');
+        continue;
+      }
+      const tokenUri = await getTokenURIs(
+        signer as ethers.Signer,
+        slotIds[i][2].toNumber(),
+      );
+      console.log('tokenUri: ', tokenUri);
+      await fetch(tokenUri)
+        .then((res) => {
+          return res.json();
+        })
+        .then((body) => {
+          console.log('attr : ', body.attributes);
+          moduleDataList.push({
+            slotId: slotIds[i][0].toNumber(),
+            name: body.name,
+            description: body.description,
+            tokenId: slotIds[i][2].toNumber(),
+            tokenUri: tokenUri,
+            attribute: body.attributes,
+          });
+        })
+        .catch(() => {
+          console.log('err');
+        });
+    }
+    setMintingModuleData(moduleDataList);
+    setSelectedGameTemplate(parseInt(value));
+  };
+
+  const onSearch = (value: string) => {
+    console.log('search:', value);
+  };
+
+  const removeSingleModule = (data: any) => {
+    const moduleList: ModuleData[] = [];
+    mintingModuleData.map((item, index) => {
+      if (item.tokenId != data.tokenId) {
+        moduleList.push({
+          slotId: item.slotId,
+          name: item.name,
+          tokenId: item.tokenId,
+          description: item.description,
+          tokenUri: item.tokenUri,
+          attribute: item.attribute,
+        });
+      }
+    });
+    setMintingModuleData(moduleList);
+  };
+
+  const PINATA_JWT =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MTQ5OTJiNy1lYTRhLTQ1ZGYtYWZjYy05MDYzMmIxOGZhM2YiLCJlbWFpbCI6ImZ1ZWF2ZUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJpZCI6IkZSQTEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX0seyJpZCI6Ik5ZQzEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYjBiNmFjOGUwM2M4MjkxYjI4ZWMiLCJzY29wZWRLZXlTZWNyZXQiOiI4ZmUzMGE2NzMxYmFkYjVjOTQzNzc4NTY1YmYwMTQwMWI1M2I0YmY5OTRmYzE2YTVkNzUyMTAyN2I0NWE4ZTMxIiwiaWF0IjoxNjc3ODMzMzY2fQ.29IPj_N7eLiP8UJYK1Hq2mUnz_Www20zeYTo7mwZ11A';
 
   async function pinJson(data: string) {
     const config: AxiosRequestConfig = {
@@ -49,7 +209,7 @@ const Mint: React.FC = () => {
       url: 'https://api.pinata.cloud/pinning/pinJSONToIPFS',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: PINATA_JWT,
+        Authorization: 'Bearer ' + PINATA_JWT,
       },
       data: data,
     };
@@ -57,233 +217,362 @@ const Mint: React.FC = () => {
     return axios(config);
   }
 
-  const getData = async () => {
-    const data = await pinJson(JSON.stringify(GAME_ABI));
+  const uploadData = async (metadata: GameNftMetadata) => {
+    const data = await pinJson(JSON.stringify(metadata));
+    //https://gateway.pinata.cloud/ipfs
     console.log(data.data);
-  };
-  //getData();
-
-  const getTokenURI = (tokenId: number) => {
-    return useContractRead({
-      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-      abi: GAME_ABI,
-      functionName: 'tokenURI',
-      args: [tokenId],
-    });
+    return data.data;
   };
 
-  console.log('tokenURI: ' + getTokenURI(1).data);
-  // const getSlotsInfo = (tokenId: number) => {
-  //   return useContractRead({
-  //     address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-  //     abi: GAME_ABI,
-  //     functionName: 'getTokenSlotsInfo',
-  //     args: [tokenId],
-  //   });
-  // };
-  // console.log('SlotsInfo: ' + getSlotsInfo(tokenId).data);
-
-  // const getTokenIdsFromAddress = (address: string) => {
-  //   return useContractRead({
-  //     address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-  //     abi: GAME_ABI,
-  //     functionName: 'balanceOfTokens',
-  //     args: [address],
-  //   });
-  // };
-  // console.log(
-  //   'getTokenIdsFromAddress: ' + getTokenIdsFromAddress(address).data,
-  // );
-
-  const mintNFT = useContractWrite({
-    mode: 'recklesslyUnprepared',
-    address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-    abi: GAME_ABI,
-    functionName: 'mint',
-    args: [
-      'https://demo.eclair.spike.network/Demo.json',
-      //baseNFTTokenID
-      0,
-      //mintRoyaltyFee Unit:wei
-      1,
-      //marketRoyaltyFraction Unit:<10000
-      1,
-      //newUsageFee Unit:wei
-      1,
-    ],
-    overrides: {
-      // payable
-      value: ethers.utils.parseEther('0'),
-    },
-  });
-  //console.log(mint.data);
-
-  const attachBatch = useContractWrite({
-    mode: 'recklesslyUnprepared',
-    address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-    abi: GAME_ABI,
-    functionName: 'attachBatch',
-    // slotIds,slotAssetTokenIds,amount
-    args: [tokenId, [1], [2], [1]],
-  });
-
-  const getTokenMintRoyaltyInfo = (tokenId: number) => {
-    return useContractRead({
-      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-      abi: GAME_ABI,
-      functionName: 'tokenMintRoyaltyInfo',
-      args: [tokenId],
-    });
-  };
-  console.log(getTokenMintRoyaltyInfo(tokenId).data);
-
-  const onChange = (value: string) => {
-    console.log(`selected ${value}`);
-  };
-
-  const onSearch = (value: string) => {
-    console.log('search:', value);
-  };
-
-  const ModuleList = [
-    { nftId: 0, tokenURI: 'www.baidu.com', charges: true },
-    { nftId: 1, tokenURI: 'www.baidu.com', charges: true },
-  ];
-
-  const [loadings, setLoadings] = useState<boolean[]>([]);
-
-  const enterLoading = (index: number) => {
-    setLoadings((prevLoadings) => {
-      const newLoadings = [...prevLoadings];
-      newLoadings[index] = true;
-      return newLoadings;
-    });
-
-    setTimeout(() => {
-      setLoadings((prevLoadings) => {
-        const newLoadings = [...prevLoadings];
-        newLoadings[index] = false;
-        return newLoadings;
+  const onModuleTemplateChange = (value: string) => {
+    if (selectedGameTemplate == -1) {
+      notification.open({
+        message: '',
+        description: 'please select a game template',
+        onClick: () => {
+          console.log('');
+        },
       });
-    }, 6000);
+      return;
+    }
+    console.log(`selected module token id -----`);
+    setSelectedModuleTemplate(parseInt(value));
+    console.log(`selected module token id: ${value}`);
   };
+
+  const addModule = async () => {
+    if (selectedModuleTemplate === -1) {
+      console.log('-1');
+      return;
+    }
+    for (let i = 0; i < mintingModuleData.length; i++) {
+      //暂时屏蔽重复模块的过滤条件
+      if (selectedModuleTemplate == mintingModuleData[i].tokenId) {
+        return;
+      }
+    }
+    console.log('selectedModuleTemplate', selectedModuleTemplate);
+    const tokenUri = await getTokenURIs(
+      signer as ethers.Signer,
+      selectedModuleTemplate,
+    );
+    const moduleList: ModuleData[] = [];
+    mintingModuleData.map((item, index) => {
+      moduleList.push({
+        slotId: item.slotId,
+        name: item.name,
+        tokenId: item.tokenId,
+        description: item.description,
+        tokenUri: item.tokenUri,
+        attribute: item.attribute,
+      });
+    });
+    await fetch(tokenUri)
+      .then((res) => {
+        return res.json();
+      })
+      .then((body) => {
+        console.log('attr : ', body.attributes);
+        moduleList.push({
+          tokenId: selectedModuleTemplate,
+          name: body.name,
+          description: body.description,
+          attribute: body.attributes,
+          tokenUri: tokenUri,
+          slotId: tokenIdToSlotId.get(selectedModuleTemplate) as number,
+        });
+      })
+      .catch(() => {
+        console.log('err');
+      });
+    setMintingModuleData(moduleList);
+  };
+
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  const onClose = () => {
+    setOpen(false);
+  };
+
+  const onSubmit = async () => {
+    setOpen(false);
+    if (
+      nameRef.current == undefined ||
+      descriptionRef.current == undefined ||
+      mintRoyaltyFeeRef.current == undefined ||
+      marketRoyaltyFractionRef.current == undefined ||
+      newUsageFeeRef.current == undefined
+    ) {
+      notification.open({
+        message: '',
+        description: 'param error',
+        onClick: () => {
+          console.log('');
+        },
+      });
+      return;
+    }
+    const name = nameRef.current.input.value;
+    const description = descriptionRef.current.input.value;
+    const mintRoyaltyFee = mintRoyaltyFeeRef.current.input.value;
+    const marketRoyaltyFraction = marketRoyaltyFractionRef.current.input.value;
+    const newUsageFee = newUsageFeeRef.current.input.value;
+    console.log('name: ', name);
+    console.log('description: ', description);
+    console.log('mintRoyaltyFee: ', mintRoyaltyFee);
+    console.log('marketRoyaltyFraction: ', marketRoyaltyFraction);
+    console.log('newUsageFee: ', newUsageFee);
+    const modulesMetadata: attribute[] = [];
+    for (let i = 0; i < mintingModuleData.length; i++) {
+      modulesMetadata.push(mintingModuleData[i].attribute);
+    }
+
+    const gameNftMetadata: GameNftMetadata = {
+      name: name,
+      description: description,
+      image: '',
+      external_url: '',
+      spike_info: {
+        version: '1',
+        type: 'Game',
+        url: 'placeholder for icon',
+      },
+      attributes: modulesMetadata,
+    };
+    const pinataRes = await uploadData(gameNftMetadata);
+    const tokenUri = 'https://gateway.pinata.cloud/ipfs/' + pinataRes.IpfsHash;
+    console.log('tokenUri: ', tokenUri);
+    const fee = await tokenMintRoyaltyInfo(
+      signer as ethers.Signer,
+      selectedGameTemplate,
+    );
+    console.log('fee: ', fee);
+    const { receipt } = await mint(
+      signer as ethers.Signer,
+      tokenUri,
+      selectedGameTemplate,
+      mintRoyaltyFee,
+      marketRoyaltyFraction,
+      newUsageFee,
+      fee,
+    );
+    const tokenId = receipt.events[0].topics[3];
+    console.log('tokenid: ', tokenId);
+    setGameTokenId(tokenId);
+  };
+
+  async function attachBatchSlot() {
+    if (gameTokenId == '-1') {
+      notification.open({
+        message: '',
+        description: 'The game nft has no valid token id',
+        onClick: () => {
+          console.log('');
+        },
+      });
+      return;
+    }
+    const slotIds: number[] = [];
+    const tokenIds: number[] = [];
+    const amounts: number[] = [];
+    console.log('mintingModuleData: ', mintingModuleData);
+    for (let i = 0; i < mintingModuleData.length; i++) {
+      slotIds.push(mintingModuleData[i].slotId);
+      tokenIds.push(mintingModuleData[i].tokenId);
+      amounts.push(1);
+    }
+    await attachBatch(
+      signer as ethers.Signer,
+      parseInt(gameTokenId, 16),
+      slotIds,
+      tokenIds,
+      amounts,
+    );
+  }
 
   return (
     <div>
       <div className=" flex gap-2">
+        <p>please select a game NFT Template : </p>
         <Select
           showSearch
           placeholder="Select a Game NFT Template"
           optionFilterProp="children"
-          onChange={onChange}
+          onChange={onGameTemplateChange}
           onSearch={onSearch}
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
-          options={[
-            {
-              value: 'jack',
-              label: 'Jack',
-            },
-            {
-              value: 'lucy',
-              label: 'Lucy',
-            },
-            {
-              value: 'tom',
-              label: 'Tom',
-            },
-          ]}
+          options={gameTemplate}
         />
-
+        <p>please add a game module</p>
         <Select
           showSearch
           placeholder="Select a Game Module"
           optionFilterProp="children"
-          onChange={onChange}
+          onChange={onModuleTemplateChange}
           onSearch={onSearch}
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
-          options={[
-            {
-              value: 'jack',
-              label: 'Jack',
-            },
-            {
-              value: 'lucy',
-              label: 'Lucy',
-            },
-            {
-              value: 'tom',
-              label: 'Tom',
-            },
-          ]}
+          options={moduleTemplate}
         />
+        <Button onClick={() => addModule()}>add module</Button>
       </div>
 
       <div>
         {
           <List
+            size="large"
             grid={{
-              gutter: 16,
+              gutter: 10,
               column: 4,
-              xs: 1,
-              sm: 2,
-              md: 4,
-              lg: 4,
-              xl: 6,
-              xxl: 3,
             }}
-            dataSource={ModuleList}
+            dataSource={mintingModuleData}
             renderItem={(item) => (
               <List.Item>
                 <Card
-                  title="NFT Module"
-                  extra={<a>X</a>}
                   style={{
-                    width: '300px',
+                    width: '100%',
                     height: '250px',
+                    margin: '20px',
                     border: 'solid',
-                    padding: '10px',
-                    margin: '10px',
+                    position: 'relative',
                   }}
+                  title={item.name}
+                  extra={
+                    <button onClick={() => removeSingleModule(item)}>X</button>
+                  }
                 >
-                  <p>{item.nftId}</p>
-                  <p>{item.tokenURI}</p>
-                  <p>{item.charges}</p>
+                  <p>tokenId: {item.tokenId}</p>
+                  <p>description: {item.description}</p>
                 </Card>
               </List.Item>
             )}
           />
         }
       </div>
-
+      <Button type="primary" onClick={showDrawer}>
+        mint
+      </Button>
+      <Button
+        type="primary"
+        style={{ margin: '20px' }}
+        onClick={() => attachBatchSlot()}
+      >
+        attach module
+      </Button>
       <div>
-        <Space direction="vertical">
-          <Button
-            type="primary"
-            loading={loadings[0]}
-            onClick={async () => {
-              const aaa = await getSlotsInfo(signer as ethers.Signer, tokenId);
-              console.log('test2', aaa);
-            }}
-            // onClick={async () => {
-            //   const aaa = await mint(
-            //     signer as ethers.Signer,
-            //     'https://demo.eclair.spike.network/Demo.json',
-            //     0,
-            //     1,
-            //     1,
-            //     1,
-            //     '0',
-            //   );
-            //   console.log('mint receipt: ', aaa);
-            // }}
-          >
-            Mint
-          </Button>
-        </Space>
+        <Drawer
+          title="Create a new strategy"
+          width={500}
+          onClose={onClose}
+          open={open}
+          bodyStyle={{
+            paddingBottom: 80,
+          }}
+          extra={
+            <Space>
+              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onSubmit} type="primary">
+                Submit
+              </Button>
+            </Space>
+          }
+        >
+          <Form layout="vertical" hideRequiredMark>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="name"
+                  label="name"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Please enter name',
+                    },
+                  ]}
+                >
+                  <Input ref={nameRef} placeholder="your nft name" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="description"
+                  label="description"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Please enter game nft description',
+                    },
+                  ]}
+                >
+                  <Input
+                    ref={descriptionRef}
+                    placeholder="your game nft description"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="mintRoyaltyFee"
+                  label="mintRoyaltyFee"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Please enter mintRoyaltyFee',
+                    },
+                  ]}
+                >
+                  <Input
+                    ref={mintRoyaltyFeeRef}
+                    placeholder="your nft mintRoyaltyFee"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="marketRoyaltyFraction"
+                  label="marketRoyaltyFraction"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Please enter game nft marketRoyaltyFraction',
+                    },
+                  ]}
+                >
+                  <Input
+                    ref={marketRoyaltyFractionRef}
+                    placeholder="your game nft marketRoyaltyFraction"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="newUsageFee"
+                  label="newUsageFee"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Please enter newUsageFee',
+                    },
+                  ]}
+                >
+                  <Input
+                    ref={newUsageFeeRef}
+                    placeholder="your nft newUsageFee"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Drawer>
       </div>
     </div>
   );

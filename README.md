@@ -3,7 +3,7 @@
 ## Instructions
 
 ```bash
-yarn install 
+yarn install
 
 yarn dev
 ```

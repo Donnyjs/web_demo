@@ -1,6 +1,5 @@
-import { ethers, utils } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import GAME_ABI from '@/service/gameComposableNFT.json';
-import { useSigner } from 'wagmi';
 
 export const getGameNFTContract = (signer: ethers.Signer): ethers.Contract => {
   return new ethers.Contract(
@@ -14,8 +13,6 @@ export const getTokenURIs = (signer: ethers.Signer, tokenId: number) => {
   try {
     const nftContract = getGameNFTContract(signer);
     const tokenURI = nftContract.tokenURI(tokenId);
-    console.log('This is a test', tokenURI);
-
     return tokenURI;
   } catch (error: any) {
     console.log('error query tokenURI ', error.reason, error);
@@ -26,12 +23,11 @@ export const getTokenURIs = (signer: ethers.Signer, tokenId: number) => {
 export const getTokenIdsFromAddress = (signer: ethers.Signer) => {
   try {
     const nftContract = getGameNFTContract(signer);
+    console.log('signer: ', signer);
     const tokenIds = nftContract.balanceOfTokens(signer.getAddress());
-    console.log('This is a test', tokenIds);
-
     return tokenIds;
   } catch (error: any) {
-    console.log('error query tokenURI ', error.reason, error);
+    console.log('error query tokenIds: ', error.reason, error);
     return '';
   }
 };
@@ -40,7 +36,7 @@ export const getSlotsInfo = (signer: ethers.Signer, tokenId: number) => {
   try {
     const nftContract = getGameNFTContract(signer);
     const SlotsInfo = nftContract.getTokenSlotsInfo(tokenId);
-    console.log('This is a test', SlotsInfo);
+    console.log('slots: ', SlotsInfo);
 
     return SlotsInfo;
   } catch (error: any) {
@@ -52,11 +48,12 @@ export const getSlotsInfo = (signer: ethers.Signer, tokenId: number) => {
 export const mint = async (
   signer: ethers.Signer,
   tokenURI: string,
+  //0
   baseNFTTokenID: number,
   mintRoyaltyFee: number,
   marketRoyaltyFraction: number,
   newUsageFee: number,
-  payable: string,
+  payable: BigNumber,
 ) => {
   try {
     const nftContract = getGameNFTContract(signer);
@@ -66,7 +63,7 @@ export const mint = async (
       mintRoyaltyFee,
       marketRoyaltyFraction,
       newUsageFee,
-      { value: ethers.utils.parseEther(payable) },
+      { value: payable },
     );
 
     console.log('minting NFT...');
@@ -107,6 +104,22 @@ export const attachBatch = async (
     return { receipt };
   } catch (error: any) {
     console.log('error attach Slot ', error.reason, error);
+    return '';
+  }
+};
+
+export const tokenMintRoyaltyInfo = async (
+  signer: ethers.Signer,
+  tokenId: number,
+) => {
+  try {
+    const nftContract = getGameNFTContract(signer);
+    const royaltyInfo = await nftContract.tokenMintRoyaltyInfo(tokenId);
+    console.log('This is RoyaltyInfo', royaltyInfo[0], '-----', royaltyInfo[1]);
+
+    return royaltyInfo[1];
+  } catch (error: any) {
+    console.log('error query tokenMintRoyaltyInfo ', error.reason, error);
     return '';
   }
 };
