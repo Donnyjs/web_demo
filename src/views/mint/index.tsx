@@ -7,7 +7,12 @@ import GAME_ABI from '@/service/gameComposableNFT.json';
 import { ethers } from 'ethers';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { PINATA_JWT } from '@/constants';
-import { getTokenURIs, getTokenIdsFromAddress, mint } from '@/service/contract';
+import {
+  getTokenURIs,
+  getTokenIdsFromAddress,
+  mint,
+  getSlotsInfo,
+} from '@/service/contract';
 
 function Test() {
   const info = useContractRead({
@@ -68,15 +73,15 @@ const Mint: React.FC = () => {
   };
 
   console.log('tokenURI: ' + getTokenURI(1).data);
-  const getSlotsInfo = (tokenId: number) => {
-    return useContractRead({
-      address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
-      abi: GAME_ABI,
-      functionName: 'getTokenSlotsInfo',
-      args: [tokenId],
-    });
-  };
-  console.log('SlotsInfo: ' + getSlotsInfo(tokenId).data);
+  // const getSlotsInfo = (tokenId: number) => {
+  //   return useContractRead({
+  //     address: '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
+  //     abi: GAME_ABI,
+  //     functionName: 'getTokenSlotsInfo',
+  //     args: [tokenId],
+  //   });
+  // };
+  // console.log('SlotsInfo: ' + getSlotsInfo(tokenId).data);
 
   // const getTokenIdsFromAddress = (address: string) => {
   //   return useContractRead({
@@ -259,22 +264,22 @@ const Mint: React.FC = () => {
           <Button
             type="primary"
             loading={loadings[0]}
-            // onClick={async () => {
-            //   const aaa = await getTokenIdsFromAddress(signer as ethers.Signer);
-            //   console.log('test2', aaa);
-            // }}
             onClick={async () => {
-              const aaa = await mint(
-                signer as ethers.Signer,
-                'https://demo.eclair.spike.network/Demo.json',
-                0,
-                1,
-                1,
-                1,
-                '0',
-              );
-              console.log('mint receipt: ', aaa);
+              const aaa = await getSlotsInfo(signer as ethers.Signer, tokenId);
+              console.log('test2', aaa);
             }}
+            // onClick={async () => {
+            //   const aaa = await mint(
+            //     signer as ethers.Signer,
+            //     'https://demo.eclair.spike.network/Demo.json',
+            //     0,
+            //     1,
+            //     1,
+            //     1,
+            //     '0',
+            //   );
+            //   console.log('mint receipt: ', aaa);
+            // }}
           >
             Mint
           </Button>
