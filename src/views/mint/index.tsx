@@ -22,9 +22,9 @@ interface GameNftMetadata {
 }
 
 interface attribute {
-  //trait_type: string;
-  // name: string;
-  //type: string;
+  trait_type: string;
+  name: string;
+  type: string;
   description: string;
   uri: string;
   size: number;
@@ -39,15 +39,6 @@ interface SpikeInfo {
 interface GameTemplate {
   label: string;
   value: string;
-}
-
-interface ModuleData {
-  name: string;
-  slotId: number;
-  tokenId: number;
-  tokenUri: string;
-  description: string;
-  attribute: attribute;
 }
 
 interface ModuleTemplate {
@@ -66,7 +57,7 @@ const Mint = () => {
   const [selectedGameTemplate, setSelectedGameTemplate] = useState<number>(-1);
   const [selectedModuleTemplate, setSelectedModuleTemplate] =
     useState<number>(-1);
-  const [mintingModuleData, setMintingModuleData] = useState<ModuleData[]>([]);
+  const [mintingModuleData, setMintingModuleData] = useState<attribute[]>([]);
 
   const [moduleTemplate, setModuleTemplate] = useState<ModuleTemplate[]>([]);
   const [gameTokenId, setGameTokenId] = useState<string>('-1');
@@ -87,7 +78,7 @@ const Mint = () => {
   async function initGameNftSelectData() {
     //写死的游戏模版库tokenId列表
     const gameNftSelectData: GameTemplate[] = [];
-    const gameTempalteTokenId: number[] = [1];
+    const gameTempalteTokenId: number[] = [9];
     for (let i = 0; i < gameTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
@@ -113,7 +104,7 @@ const Mint = () => {
 
     //写死的模块模版库tokenId列表
     const moduleNftSelectData: ModuleTemplate[] = [];
-    const moduleTempalteTokenId: number[] = [2, 3, 4];
+    const moduleTempalteTokenId: number[] = [6, 7, 8];
     for (let i = 0; i < moduleTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
@@ -127,7 +118,7 @@ const Mint = () => {
           console.log('game : ');
           moduleNftSelectData.push({
             value: moduleTempalteTokenId[i] + '',
-            label: body.name,
+            label: body.attributes.name,
           });
         })
         .catch(() => {
@@ -140,43 +131,60 @@ const Mint = () => {
   const onGameTemplateChange = async (value: string) => {
     console.log(`selected game token id: ${value}`);
     //查询游戏内的模块tokenId列表
-    const slotIds = await getSlotsInfo(
+    // const slotIds = await getSlotsInfo(
+    //   signer as ethers.Signer,
+    //   parseInt(value),
+    // );
+    // console.log('slotIds : ', slotIds);
+    // const moduleDataList: ModuleData[] = [];
+    // for (let i = 0; i < slotIds.length; i++) {
+    // check isFilled
+    // if (slotIds[i][3] == false) {
+    //   console.log('not fillled');
+    //   continue;
+    // }
+    // const tokenUri = await getTokenURIs(
+    //   signer as ethers.Signer,
+    //   slotIds[i][2].toNumber(),
+    // );
+    // console.log('tokenUri: ', tokenUri);
+    // await fetch(tokenUri)
+    //   .then((res) => {
+    //     return res.json();
+    //   })
+    //   .then((body) => {
+    //     console.log('attr : ', body.attributes);
+    //     moduleDataList.push({
+    //       slotId: slotIds[i][0].toNumber(),
+    //       name: body.name,
+    //       description: body.description,
+    //       tokenId: slotIds[i][2].toNumber(),
+    //       tokenUri: tokenUri,
+    //       attribute: body.attributes,
+    //     });
+    //   })
+    //   .catch(() => {
+    //     console.log('err');
+    //   });
+    // }
+    // setMintingModuleData(moduleDataList);
+    // setSelectedGameTemplate(parseInt(value));
+    const tokenUri = await getTokenURIs(
       signer as ethers.Signer,
       parseInt(value),
     );
-    console.log('slotIds : ', slotIds);
-    const moduleDataList: ModuleData[] = [];
-    for (let i = 0; i < slotIds.length; i++) {
-      // check isFilled
-      if (slotIds[i][3] == false) {
-        console.log('not fillled');
-        continue;
-      }
-      const tokenUri = await getTokenURIs(
-        signer as ethers.Signer,
-        slotIds[i][2].toNumber(),
-      );
-      console.log('tokenUri: ', tokenUri);
-      await fetch(tokenUri)
-        .then((res) => {
-          return res.json();
-        })
-        .then((body) => {
-          console.log('attr : ', body.attributes);
-          moduleDataList.push({
-            slotId: slotIds[i][0].toNumber(),
-            name: body.name,
-            description: body.description,
-            tokenId: slotIds[i][2].toNumber(),
-            tokenUri: tokenUri,
-            attribute: body.attributes,
-          });
-        })
-        .catch(() => {
-          console.log('err');
-        });
-    }
-    setMintingModuleData(moduleDataList);
+    console.log('tokenUri: ', tokenUri);
+    await fetch(tokenUri)
+      .then((res) => {
+        return res.json();
+      })
+      .then((body) => {
+        console.log('attr : ', body.attributes);
+        setMintingModuleData(body.attributes);
+      })
+      .catch(() => {
+        console.log('err');
+      });
     setSelectedGameTemplate(parseInt(value));
   };
 
@@ -185,16 +193,26 @@ const Mint = () => {
   };
 
   const removeSingleModule = (data: any) => {
-    const moduleList: ModuleData[] = [];
+    if (data.type == 'fixed' || data.name == 'modular.json') {
+      notification.open({
+        message: '',
+        description: 'The module is fixed',
+        onClick: () => {
+          console.log('');
+        },
+      });
+      return;
+    }
+    const moduleList: attribute[] = [];
     mintingModuleData.map((item, index) => {
-      if (item.tokenId != data.tokenId) {
+      if (item.name != data.name) {
         moduleList.push({
-          slotId: item.slotId,
+          trait_type: item.trait_type,
           name: item.name,
-          tokenId: item.tokenId,
           description: item.description,
-          tokenUri: item.tokenUri,
-          attribute: item.attribute,
+          type: item.type,
+          uri: item.uri,
+          size: item.size,
         });
       }
     });
@@ -246,46 +264,49 @@ const Mint = () => {
       console.log('-1');
       return;
     }
-    for (let i = 0; i < mintingModuleData.length; i++) {
-      //暂时屏蔽重复模块的过滤条件
-      if (selectedModuleTemplate == mintingModuleData[i].tokenId) {
-        return;
-      }
-    }
-    console.log('selectedModuleTemplate', selectedModuleTemplate);
     const tokenUri = await getTokenURIs(
       signer as ethers.Signer,
       selectedModuleTemplate,
     );
-    const moduleList: ModuleData[] = [];
-    mintingModuleData.map((item, index) => {
-      moduleList.push({
-        slotId: item.slotId,
-        name: item.name,
-        tokenId: item.tokenId,
-        description: item.description,
-        tokenUri: item.tokenUri,
-        attribute: item.attribute,
-      });
-    });
+    const moduleList: attribute[] = [];
+
     await fetch(tokenUri)
       .then((res) => {
         return res.json();
       })
       .then((body) => {
         console.log('attr : ', body.attributes);
-        moduleList.push({
-          tokenId: selectedModuleTemplate,
-          name: body.name,
-          description: body.description,
-          attribute: body.attributes,
-          tokenUri: tokenUri,
-          slotId: tokenIdToSlotId.get(selectedModuleTemplate) as number,
+        for (let i = 0; i < mintingModuleData.length; i++) {
+          //暂时屏蔽重复模块的过滤条件
+          if (body.name == mintingModuleData[i].name) {
+            notification.open({
+              message: '',
+              description: 'The module is redundant',
+              onClick: () => {
+                console.log('');
+              },
+            });
+            return;
+          }
+        }
+
+        mintingModuleData.map((item, index) => {
+          moduleList.push({
+            trait_type: item.trait_type,
+            name: item.name,
+            type: item.type,
+            description: item.description,
+            uri: item.uri,
+            size: item.size,
+          });
         });
+        moduleList.push(body.attributes);
       })
       .catch(() => {
         console.log('err');
       });
+    console.log('selectedModuleTemplate', selectedModuleTemplate);
+
     setMintingModuleData(moduleList);
   };
 
@@ -327,7 +348,7 @@ const Mint = () => {
     console.log('newUsageFee: ', newUsageFee);
     const modulesMetadata: attribute[] = [];
     for (let i = 0; i < mintingModuleData.length; i++) {
-      modulesMetadata.push(mintingModuleData[i].attribute);
+      modulesMetadata.push(mintingModuleData[i]);
     }
 
     const gameNftMetadata: GameNftMetadata = {
@@ -361,6 +382,13 @@ const Mint = () => {
     );
     const tokenId = receipt.events[0].topics[3];
     console.log('tokenid: ', tokenId);
+    notification.open({
+      message: '',
+      description: 'The game nft tokenId is ' + parseInt(gameTokenId, 16),
+      onClick: () => {
+        console.log('');
+      },
+    });
     setGameTokenId(tokenId);
   };
 
@@ -447,7 +475,6 @@ const Mint = () => {
                     <button onClick={() => removeSingleModule(item)}>X</button>
                   }
                 >
-                  <p>tokenId: {item.tokenId}</p>
                   <p>description: {item.description}</p>
                 </Card>
               </List.Item>
@@ -458,13 +485,13 @@ const Mint = () => {
       <Button type="primary" onClick={showDrawer}>
         mint
       </Button>
-      <Button
+      {/* <Button
         type="primary"
         style={{ margin: '20px' }}
         onClick={() => attachBatchSlot()}
       >
         attach module
-      </Button>
+      </Button> */}
       <div>
         <Drawer
           title="Create a new strategy"
