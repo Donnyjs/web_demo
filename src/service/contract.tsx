@@ -3,7 +3,7 @@ import GAME_ABI from '@/service/gameComposableNFT.json';
 
 export const getGameNFTContract = (signer: ethers.Signer): ethers.Contract => {
   return new ethers.Contract(
-    '0x9bcF34b02ba3960F25c1430840F73E8ffc27f68f',
+    '0xF6734849b69c0A0e11d56d884aC1E3Ad8d131998',
     GAME_ABI,
     signer,
   );

@@ -45,7 +45,7 @@ function GameNftList() {
       });
     }
     const showData: GameNftData[] = [];
-    for (let i = 30; i < tokenUriList.length; i++) {
+    for (let i = 0; i < tokenUriList.length; i++) {
       await fetch(tokenUriList[i].tokenUri)
         .then((res) => {
           return res.json();

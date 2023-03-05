@@ -72,8 +72,9 @@ const Mint = () => {
   const [gameTokenId, setGameTokenId] = useState<string>('-1');
   //模块模版  tokenId 和 slotId的对应关系
   const tokenIdToSlotId = new Map([
-    [5, 3],
-    [32, 10],
+    [2, 2],
+    [3, 3],
+    [4, 4],
   ]);
 
   const [open, setOpen] = useState(false);
@@ -112,7 +113,7 @@ const Mint = () => {
 
     //写死的模块模版库tokenId列表
     const moduleNftSelectData: ModuleTemplate[] = [];
-    const moduleTempalteTokenId: number[] = [32];
+    const moduleTempalteTokenId: number[] = [2, 3, 4];
     for (let i = 0; i < moduleTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
