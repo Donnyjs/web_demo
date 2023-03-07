@@ -152,7 +152,9 @@ function GameNftList() {
                 margin: '20px',
               }}
               extra={
-                <button onClick={() => handleGameNftInfo(item)}>info</button>
+                <a href={'https://demo.eclair.spike.network/' + item.tokenId}>
+                  play game
+                </a>
               }
               title={item.name}
             >

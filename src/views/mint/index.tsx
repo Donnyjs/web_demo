@@ -4,12 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios, { AxiosRequestConfig } from 'axios';
 import { ethers } from 'ethers';
 import { useSigner } from 'wagmi';
-import {
-  getTokenURIs,
-  tokenMintRoyaltyInfo,
-  mint,
-  attachBatch,
-} from '@/service/contract';
+import { getTokenURIs, tokenMintRoyaltyInfo, mint } from '@/service/contract';
 
 interface GameNftMetadata {
   name: string;
@@ -392,14 +387,14 @@ const Mint = () => {
       fee,
     );
     const tokenId = receipt.events[0].topics[3];
-    console.log('tokenid: ', tokenId);
-    notification.open({
-      message: '',
-      description: 'The game nft tokenId is ' + parseInt(gameTokenId, 16),
-      onClick: () => {
-        console.log('');
-      },
-    });
+    //console.log('tokenid: ', tokenId);
+    // notification.open({
+    //   message: '',
+    //   description: 'The game nft tokenId is ' + parseInt(gameTokenId, 16),
+    //   onClick: () => {
+    //     console.log('');
+    //   },
+    // });
     setGameTokenId(tokenId);
   };
 
