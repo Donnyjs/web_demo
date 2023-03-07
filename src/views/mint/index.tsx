@@ -6,7 +6,6 @@ import { ethers } from 'ethers';
 import { useSigner } from 'wagmi';
 import {
   getTokenURIs,
-  getSlotsInfo,
   tokenMintRoyaltyInfo,
   mint,
   attachBatch,
@@ -62,11 +61,11 @@ const Mint = () => {
   const [moduleTemplate, setModuleTemplate] = useState<ModuleTemplate[]>([]);
   const [gameTokenId, setGameTokenId] = useState<string>('-1');
   //模块模版  tokenId 和 slotId的对应关系
-  const tokenIdToSlotId = new Map([
-    [2, 2],
-    [3, 3],
-    [4, 4],
-  ]);
+  // const tokenIdToSlotId = new Map([
+  //   [2, 2],
+  //   [3, 3],
+  //   [4, 4],
+  // ]);
 
   const [open, setOpen] = useState(false);
   const nameRef = useRef<string>();
@@ -78,14 +77,17 @@ const Mint = () => {
   async function initGameNftSelectData() {
     //写死的游戏模版库tokenId列表
     const gameNftSelectData: GameTemplate[] = [];
-    const gameTempalteTokenId: number[] = [9];
+    const gameTempalteTokenId: number[] = [1];
     for (let i = 0; i < gameTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
         gameTempalteTokenId[i],
       );
       console.log('tokenUri: ', tokenUri);
-      await fetch(tokenUri)
+      await fetch(
+        tokenUri +
+          '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+      )
         .then((res) => {
           return res.json();
         })
@@ -104,13 +106,16 @@ const Mint = () => {
 
     //写死的模块模版库tokenId列表
     const moduleNftSelectData: ModuleTemplate[] = [];
-    const moduleTempalteTokenId: number[] = [6, 7, 8];
+    const moduleTempalteTokenId: number[] = [2, 3, 4];
     for (let i = 0; i < moduleTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
         moduleTempalteTokenId[i],
       );
-      await fetch(tokenUri)
+      await fetch(
+        tokenUri +
+          '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+      )
         .then((res) => {
           return res.json();
         })
@@ -174,7 +179,10 @@ const Mint = () => {
       parseInt(value),
     );
     console.log('tokenUri: ', tokenUri);
-    await fetch(tokenUri)
+    await fetch(
+      tokenUri +
+        '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+    )
       .then((res) => {
         return res.json();
       })
@@ -204,7 +212,7 @@ const Mint = () => {
       return;
     }
     const moduleList: attribute[] = [];
-    mintingModuleData.map((item, index) => {
+    mintingModuleData.map((item) => {
       if (item.name != data.name) {
         moduleList.push({
           trait_type: item.trait_type,
@@ -220,7 +228,7 @@ const Mint = () => {
   };
 
   const PINATA_JWT =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MTQ5OTJiNy1lYTRhLTQ1ZGYtYWZjYy05MDYzMmIxOGZhM2YiLCJlbWFpbCI6ImZ1ZWF2ZUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJpZCI6IkZSQTEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX0seyJpZCI6Ik5ZQzEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYjBiNmFjOGUwM2M4MjkxYjI4ZWMiLCJzY29wZWRLZXlTZWNyZXQiOiI4ZmUzMGE2NzMxYmFkYjVjOTQzNzc4NTY1YmYwMTQwMWI1M2I0YmY5OTRmYzE2YTVkNzUyMTAyN2I0NWE4ZTMxIiwiaWF0IjoxNjc3ODMzMzY2fQ.29IPj_N7eLiP8UJYK1Hq2mUnz_Www20zeYTo7mwZ11A';
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI1NzllY2VjYy1lN2Q3LTQ0NGItYTcyZS02NzM1YTJlYTQ1ZmQiLCJlbWFpbCI6ImFzaHRvbmNoZW44M0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJpZCI6Ik5ZQzEiLCJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MX1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiN2NlYjYzNTBkN2Y5NDZkYThiMzMiLCJzY29wZWRLZXlTZWNyZXQiOiI5MWI1YTQ4OGUwM2I4YWVlODVkYzFlZDgzM2JlMjFjMDMyYmJkNjg2YzMzNDRhMjJkMjRjOTFmMWYzY2EzYzU0IiwiaWF0IjoxNjc4MTYwNjMyfQ.NWeXskjkQjsO9RkX2MuZT_yqWQ-JnE6Gq3rVLQS_bNg';
 
   async function pinJson(data: string) {
     const config: AxiosRequestConfig = {
@@ -270,7 +278,10 @@ const Mint = () => {
     );
     const moduleList: attribute[] = [];
 
-    await fetch(tokenUri)
+    await fetch(
+      tokenUri +
+        '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+    )
       .then((res) => {
         return res.json();
       })
@@ -290,7 +301,7 @@ const Mint = () => {
           }
         }
 
-        mintingModuleData.map((item, index) => {
+        mintingModuleData.map((item) => {
           moduleList.push({
             trait_type: item.trait_type,
             name: item.name,
@@ -364,7 +375,7 @@ const Mint = () => {
       attributes: modulesMetadata,
     };
     const pinataRes = await uploadData(gameNftMetadata);
-    const tokenUri = 'https://gateway.pinata.cloud/ipfs/' + pinataRes.IpfsHash;
+    const tokenUri = 'https://oasis.mypinata.cloud/ipfs/' + pinataRes.IpfsHash;
     console.log('tokenUri: ', tokenUri);
     const fee = await tokenMintRoyaltyInfo(
       signer as ethers.Signer,
@@ -392,34 +403,34 @@ const Mint = () => {
     setGameTokenId(tokenId);
   };
 
-  async function attachBatchSlot() {
-    if (gameTokenId == '-1') {
-      notification.open({
-        message: '',
-        description: 'The game nft has no valid token id',
-        onClick: () => {
-          console.log('');
-        },
-      });
-      return;
-    }
-    const slotIds: number[] = [];
-    const tokenIds: number[] = [];
-    const amounts: number[] = [];
-    console.log('mintingModuleData: ', mintingModuleData);
-    for (let i = 0; i < mintingModuleData.length; i++) {
-      slotIds.push(mintingModuleData[i].slotId);
-      tokenIds.push(mintingModuleData[i].tokenId);
-      amounts.push(1);
-    }
-    await attachBatch(
-      signer as ethers.Signer,
-      parseInt(gameTokenId, 16),
-      slotIds,
-      tokenIds,
-      amounts,
-    );
-  }
+  // async function attachBatchSlot() {
+  //   if (gameTokenId == '-1') {
+  //     notification.open({
+  //       message: '',
+  //       description: 'The game nft has no valid token id',
+  //       onClick: () => {
+  //         console.log('');
+  //       },
+  //     });
+  //     return;
+  //   }
+  //   const slotIds: number[] = [];
+  //   const tokenIds: number[] = [];
+  //   const amounts: number[] = [];
+  //   console.log('mintingModuleData: ', mintingModuleData);
+  //   for (let i = 0; i < mintingModuleData.length; i++) {
+  //     slotIds.push(mintingModuleData[i].slotId);
+  //     tokenIds.push(mintingModuleData[i].tokenId);
+  //     amounts.push(1);
+  //   }
+  //   await attachBatch(
+  //     signer as ethers.Signer,
+  //     parseInt(gameTokenId, 16),
+  //     slotIds,
+  //     tokenIds,
+  //     amounts,
+  //   );
+  // }
 
   return (
     <div>
@@ -472,7 +483,17 @@ const Mint = () => {
                   }}
                   title={item.name}
                   extra={
-                    <button onClick={() => removeSingleModule(item)}>X</button>
+                    <button
+                      style={{
+                        display:
+                          item.type == 'fixed' || item.name == 'modular.json'
+                            ? 'none'
+                            : 'inline',
+                      }}
+                      onClick={() => removeSingleModule(item)}
+                    >
+                      X
+                    </button>
                   }
                 >
                   <p>description: {item.description}</p>

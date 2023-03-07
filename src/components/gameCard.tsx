@@ -46,7 +46,10 @@ function GameNftList() {
     }
     const showData: GameNftData[] = [];
     for (let i = 0; i < tokenUriList.length; i++) {
-      await fetch(tokenUriList[i].tokenUri)
+      await fetch(
+        tokenUriList[i].tokenUri +
+          '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+      )
         .then((res) => {
           return res.json();
         })
@@ -97,7 +100,10 @@ function GameNftList() {
 
     const showData: GameNftData[] = [];
     for (let i = 0; i < tokenUriList.length; i++) {
-      await fetch(tokenUriList[i].tokenUri)
+      await fetch(
+        tokenUriList[i].tokenUri +
+          '?pinataGatewayToken=-KN8pJpq7hJ4kipqWyKUv9IYlB-Uq_D5mDfQa8c_WgWsfOmGQZZXP6rMPv7AX6zC',
+      )
         .then((res) => {
           return res.json();
         })
