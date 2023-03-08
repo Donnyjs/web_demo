@@ -101,7 +101,7 @@ const Mint = () => {
 
     //写死的模块模版库tokenId列表
     const moduleNftSelectData: ModuleTemplate[] = [];
-    const moduleTempalteTokenId: number[] = [13, 15, 16];
+    const moduleTempalteTokenId: number[] = [13, 16, 23];
     for (let i = 0; i < moduleTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
@@ -208,7 +208,7 @@ const Mint = () => {
     }
     const moduleList: attribute[] = [];
     mintingModuleData.map((item) => {
-      if (item.name != data.name) {
+      if (item.uri != data.uri) {
         moduleList.push({
           trait_type: item.trait_type,
           name: item.name,
