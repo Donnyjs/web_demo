@@ -72,7 +72,7 @@ const Mint = () => {
   async function initGameNftSelectData() {
     //写死的游戏模版库tokenId列表
     const gameNftSelectData: GameTemplate[] = [];
-    const gameTempalteTokenId: number[] = [1];
+    const gameTempalteTokenId: number[] = [19];
     for (let i = 0; i < gameTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
@@ -101,7 +101,7 @@ const Mint = () => {
 
     //写死的模块模版库tokenId列表
     const moduleNftSelectData: ModuleTemplate[] = [];
-    const moduleTempalteTokenId: number[] = [2, 3, 4];
+    const moduleTempalteTokenId: number[] = [13, 15, 16];
     for (let i = 0; i < moduleTempalteTokenId.length; i++) {
       const tokenUri = await getTokenURIs(
         signer as ethers.Signer,
@@ -118,7 +118,7 @@ const Mint = () => {
           console.log('game : ');
           moduleNftSelectData.push({
             value: moduleTempalteTokenId[i] + '',
-            label: body.attributes.name,
+            label: body.name,
           });
         })
         .catch(() => {
