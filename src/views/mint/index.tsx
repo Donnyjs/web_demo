@@ -1,4 +1,4 @@
-import { List, Select, notification } from 'antd';
+import { List, notification } from 'antd';
 import { Card, Button, Col, Drawer, Form, Input, Row, Space } from 'antd';
 import { useEffect, useState, useRef } from 'react';
 import axios, { AxiosRequestConfig } from 'axios';
@@ -41,9 +41,9 @@ interface ModuleTemplate {
 }
 
 const Mint = () => {
-  useEffect(() => {
-    initGameNftSelectData();
-  }, []);
+  // useEffect(() => {
+  //   initGameNftSelectData();
+  // }, []);
 
   const { data: signer } = useSigner();
 
@@ -68,6 +68,8 @@ const Mint = () => {
   const mintRoyaltyFeeRef = useRef();
   const marketRoyaltyFractionRef = useRef();
   const newUsageFeeRef = useRef();
+  const gameTemplateTokenIdRef = useRef();
+  const moduleTemplateTokenIdRef = useRef();
 
   async function initGameNftSelectData() {
     //写死的游戏模版库tokenId列表
@@ -128,8 +130,14 @@ const Mint = () => {
     setModuleTemplate(moduleNftSelectData);
   }
 
-  const onGameTemplateChange = async (value: string) => {
-    console.log(`selected game token id: ${value}`);
+  const queryGameTemplate = async () => {
+    if (gameTemplateTokenIdRef.current == null) {
+      return;
+    }
+    setMintingModuleData([]);
+
+    const tokenId = gameTemplateTokenIdRef.current.input.value;
+    console.log(`selected game token id: ${tokenId}`);
     //查询游戏内的模块tokenId列表
     // const slotIds = await getSlotsInfo(
     //   signer as ethers.Signer,
@@ -171,7 +179,7 @@ const Mint = () => {
     // setSelectedGameTemplate(parseInt(value));
     const tokenUri = await getTokenURIs(
       signer as ethers.Signer,
-      parseInt(value),
+      parseInt(tokenId),
     );
     console.log('tokenUri: ', tokenUri);
     await fetch(
@@ -182,13 +190,14 @@ const Mint = () => {
         return res.json();
       })
       .then((body) => {
+        console.log('name : ', body.name);
         console.log('attr : ', body.attributes);
         setMintingModuleData(body.attributes);
       })
       .catch(() => {
         console.log('err');
       });
-    setSelectedGameTemplate(parseInt(value));
+    setSelectedGameTemplate(parseInt(tokenId));
   };
 
   const onSearch = (value: string) => {
@@ -196,7 +205,7 @@ const Mint = () => {
   };
 
   const removeSingleModule = (data: any) => {
-    if (data.type == 'fixed' || data.name == 'modular.json') {
+    if (data.type == 'fixed' && data.name != 'NFTGuys.pck') {
       notification.open({
         message: '',
         description: 'The module is fixed',
@@ -246,30 +255,18 @@ const Mint = () => {
     return data.data;
   };
 
-  const onModuleTemplateChange = (value: string) => {
-    if (selectedGameTemplate == -1) {
-      notification.open({
-        message: '',
-        description: 'please select a game template',
-        onClick: () => {
-          console.log('');
-        },
-      });
-      return;
-    }
-    console.log(`selected module token id -----`);
-    setSelectedModuleTemplate(parseInt(value));
-    console.log(`selected module token id: ${value}`);
-  };
-
   const addModule = async () => {
-    if (selectedModuleTemplate === -1) {
-      console.log('-1');
+    if (moduleTemplateTokenIdRef.current == null) {
+      console.log('moduleTemplateTokenId is empty');
       return;
     }
+
+    const tokenId = moduleTemplateTokenIdRef.current.input.value;
+    console.log(`selected module token id: ${tokenId}`);
+
     const tokenUri = await getTokenURIs(
       signer as ethers.Signer,
-      selectedModuleTemplate,
+      parseInt(tokenId),
     );
     const moduleList: attribute[] = [];
 
@@ -288,9 +285,6 @@ const Mint = () => {
             notification.open({
               message: '',
               description: 'The module is redundant',
-              onClick: () => {
-                console.log('');
-              },
             });
             return;
           }
@@ -311,8 +305,6 @@ const Mint = () => {
       .catch(() => {
         console.log('err');
       });
-    console.log('selectedModuleTemplate', selectedModuleTemplate);
-
     setMintingModuleData(moduleList);
   };
 
@@ -430,8 +422,8 @@ const Mint = () => {
   return (
     <div>
       <div className=" flex gap-2">
-        <p>please select a game NFT Template : </p>
-        <Select
+        <p>please input a game NFT Template TokenId : </p>
+        {/* <Select
           showSearch
           placeholder="Select a Game NFT Template"
           optionFilterProp="children"
@@ -441,9 +433,15 @@ const Mint = () => {
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           options={gameTemplate}
+        /> */}
+        <Input
+          style={{ width: '90px', height: '30px' }}
+          ref={gameTemplateTokenIdRef}
+          placeholder="tokenId"
         />
-        <p>please add a game module</p>
-        <Select
+        <Button onClick={() => queryGameTemplate()}>query</Button>
+        <p>please input select a game module tokenId</p>
+        {/* <Select
           showSearch
           placeholder="Select a Game Module"
           optionFilterProp="children"
@@ -453,6 +451,11 @@ const Mint = () => {
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           options={moduleTemplate}
+        /> */}
+        <Input
+          style={{ width: '90px', height: '30px' }}
+          ref={moduleTemplateTokenIdRef}
+          placeholder="tokenId"
         />
         <Button onClick={() => addModule()}>add module</Button>
       </div>
@@ -481,7 +484,7 @@ const Mint = () => {
                     <button
                       style={{
                         display:
-                          item.type == 'fixed' || item.name == 'modular.json'
+                          item.type == 'fixed' && item.name != 'NFTGuys.pck'
                             ? 'none'
                             : 'inline',
                       }}
